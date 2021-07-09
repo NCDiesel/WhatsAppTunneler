@@ -1,2 +1,2 @@
 # WhatAppTunneler
-Group Prohject for coming up with a WhatsApp Tunneler
+Group Project for coming up with a WhatsApp Tunneler
