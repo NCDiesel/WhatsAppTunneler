@@ -1,49 +1,44 @@
 import socket
 
 HOST = ''
+PORT = 44455
+BUFFER_SIZE = 1024
 
 def start():
-    port = 44455
-    buffer_size = 1024
-
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.bind((HOST, port))
+        s.bind((HOST, PORT))
         s.listen()
 
         
         while True:
             conn, addr = s.accept()
             print('Connection from ', addr)
-            data = conn.recv(buffer_size)
+            data = conn.recv(BUFFER_SIZE)
             if not data:
                 break
 
-            pp(data)
+            tunnel_request(data, conn)
 
-            msg = "testing\n"
-            msg_len = len(msg)
-            message = (buffer_size - msg_len)*'' + msg
-            conn.send(message.encode())
-
-                
-def pp(data):
-    print(data.decode())
-
-
-def tunnel_request(data, s):
+def tunnel_request(data, conn):
     # CODE TO AUTOMATE MANUAL WRITING OF WHATSAPP MESSAGE
     # SENDS TO SERVER
     # GETS RESPONSE
-    write()
-    html = read()
-    # print(html)
-    s.send(html)
+    write(data)
+    r = read()
+    message = r + (BUFFER_SIZE - len(r)) * ' '
+    conn.send(message.encode())
 
-def write():
+def write(data):
+    data = data.decode().split('\n')
+    request = data[0]
+    print("Forwarding request: " + request)
     pass
 
 def read():
-    return b'test'
+    print("Success!")
+    return "testing\n"
 
+def pp(data):
+    print(data.decode())
 
 start()
