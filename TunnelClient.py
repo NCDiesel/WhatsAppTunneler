@@ -195,16 +195,16 @@ def start():
             tunnel_request(data, conn)
 
 def tunnel_request(data, conn):
-    # CODE TO AUTOMATE MANUAL WRITING OF WHATSAPP MESSAGE
-    # SENDS TO SERVER
-    # GETS RESPONSE
+    # Writes WhatsApp message
     write_message(data)
     
     # Wait for the next message from the server
     response = wait_full_message()
     
+    # Adds padding and forwards response to browser
     message = response + (BUFFER_SIZE - len(response)) * ' '
     conn.send(message.encode())
+
 ######################
 
 
