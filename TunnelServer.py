@@ -40,7 +40,7 @@ def find_coords():
     find_text_box()
 
     # Remove screenshot
-    os.remove('assets\ss.png')
+    os.remove('assets/ss.png')
 
 ### Resize the WhatsApp window to make it easier to find the newest message coords easier ###
 def resize():
@@ -82,23 +82,19 @@ def find_new_message():
     new_message_x, new_message_y = mnLoc
 
 ### Writes a message to WhatsApp ###
-def writeMessage(message):
+def write_message(message):
     # Click on the text box
     pyautogui.click(text_box_x,text_box_y)
-    # Base64encode message
-    # b64message = base64.b64encode(message.encode('utf-8'))
-    # append a * so receiver knows when we're done
-    b64message = base64.b64encode(message.encode('utf-8'))
-    b64message = b64message +  '*'.encode('utf-8')
+    # Base64encode message and append a * so receiver knows when we're done
+    b64message = base64.b64encode(message.encode('utf-8')) + '*'.encode('utf-8')
     # Send the messages in 844 character chunks
     while(len(b64message.decode("utf-8")) > 844):
-        # click on the message box
-        # make ToSend string the first 844 characters of b64message
-        ToSend = b64message[:844]
-        # Remove the characters in the ToSend string
+        # make curr_chunk string the first 844 characters of b64message
+        curr_chunk = b64message[:844]
+        # Remove the characters in the to_send string
         b64message = b64message[845:]
         # write the message in the text box
-        pyautogui.write(ToSend)
+        pyautogui.write(curr_chunk)
         # Wait for an ack
         wait_ack()
 
@@ -112,10 +108,7 @@ def writeMessage(message):
 def read_message():
     global cliphash
 
-    # Highlight possible new message
-    pyautogui.click(new_message_x, new_message_y - 30)
-    pyautogui.click(new_message_x, new_message_y - 30)
-    pyautogui.click(new_message_x, new_message_y - 30)
+    highlight_new_message()
     
     # Attempt to copy
     pyautogui.hotkey('ctrl', 'c')
@@ -123,42 +116,41 @@ def read_message():
     # Escape in case we highlighted our own message
     pyautogui.press('esc')
 
-    if pyperclip.paste() == "Ack":
-        return "Ack"
+    new_message = pyperclip.paste()
+    if new_message == "Ack":
+        return new_message
 
-    #If a new message was copied 
-    if hashlib.md5(pyperclip.paste().encode('utf-8')).digest() != cliphash:
-        cliphash = hashlib.md5(pyperclip.paste().encode('utf-8')).digest()
-        return pyperclip.paste()
-    
-    # If nothing has changed
-    return None
+    new_msg_hash = hashlib.md5(pyperclip.paste().encode('utf-8')).digest()
+    if new_msg_hash != cliphash:
+        cliphash = new_msg_hash
+        return new_message
+    else:
+        return None
+
+def highlight_new_message():
+    pyautogui.click(new_message_x, new_message_y - 30)
+    pyautogui.click(new_message_x, new_message_y - 30)
+    pyautogui.click(new_message_x, new_message_y - 30) 
 
 ### Waits for the next full message to come in ###
 ### Acks and decodes as necessary ###
 def wait_full_message():
     # Wait for a response from server
-    initial = None
-    time_wait = 0
-    while initial is None:
-        time.sleep(time_wait)
-        initial = read_message()
-        time_wait = delay
+    message = read_message()
 
-    # Wait for the rest of response if not complete (doesn't end with *)
-    chunk = None
-    time_wait = 0
-    while initial[-1] != '*':
+    while message is None:
+        time.sleep(delay)
+        message = read_message()
+
+    while message[-1] != '*':
         write_ack()
-        while chunk is None:
-            time.sleep(time_wait)
-            chunk = read_message()
-            time_wait = delay
-        initial = initial + chunk
-        chunk = None
-    full = initial[:-1]
-    decoded = base64.b64decode(full).decode('utf-8')
-    return decoded
+        next_chunk = read_message()
+        while next_chunk is None:
+            time.sleep(delay)
+            next_chunk = read_message()
+        message += next_chunk
+
+    return base64.b64decode(message[:-1]).decode('utf-8')
 
 ### Wait for other side to ack ###
 ### ACKS are only sent and read by write_message ###
