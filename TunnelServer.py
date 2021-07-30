@@ -24,6 +24,8 @@ new_message_y = 0
 text_box_x = 0
 text_box_y = 0
 delay = .05 
+HOST = "192.168.1.213"
+PORT = 8080
 
 ### Runs on startup to find essential GUI object coordinates ###   
 def find_coords():
@@ -169,7 +171,13 @@ def write_ack():
 
 ### Handle communications with squid ###
 def squid_stuff(request):
-    # Send a request to the squid server
+    # Open a socket to the squid server
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.connect((HOST, PORT))
+        # Send the request
+        s.sendall(request.encode('utf-8'))
+        # get the reply
+        rec = s.recv(2048)
     # return the response from the squid server
     return response
 
