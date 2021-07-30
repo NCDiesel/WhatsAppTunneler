@@ -1,5 +1,16 @@
 import requests
 
+#Function to send data through get requests to the proxy. Runs on startup
+#swap 'test' function out for commented out getrequest while in use. 
+def sendData():
+    # URL, headers = getRequest()
+    InputURL, inputheader = test()
+    Inputproxy = {'http': 'http//127.0.0.1:8080'}
+    getdata = requests.get(InputURL,headers=inputheader, proxies=Inputproxy) #returns a response object, takes URL, the header library, and input proxy
+    write(getdata)
+    print(getdata.content) 
+    return getdata
+
 #helper to enble users to manually enter get request info
 def getRequest():
     URL = input("Please enter URL as a string:\n")
@@ -11,6 +22,7 @@ def test():
     header = {'Host': 'info.cern.c','User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:89.0) Gecko/20100101 Firefox/89.0', 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8', 'Accept-Language':'en-US,en;q=0.5', 'Accept-Encoding': 'gzip, deflate', 'nConnection': 'keep-alive', 'Upgrade-Insecure-Requests': '1'  }
     URL = 'http://info.cern.ch/'
     return URL, headers
+    
 #helper to dertermin sucess
 def write(httpresponse):
 	if "html" in httpresponse:
@@ -19,13 +31,4 @@ def write(httpresponse):
 		return "Success"
 	return "Failed, not html"
 
-#Function to send data through get requests to the proxy.
-#swap 'test' function out for getrequest while in use. 
-def sendData():
-   # URL, headers = getRequest()
-    InputURL, inputheader = test()
-    Inputproxy = {"http": "http//:8080"}
-    getdata = requests.get(url=InputURL,headers=inputheader, proxies=Inputproxy) #returns a response object, takes URL, the header library, and input proxy
-    write(getdata)
-    print(getdata.content) 
-    return getdata
+
