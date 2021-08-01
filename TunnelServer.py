@@ -1,18 +1,11 @@
-import cv2
-import pyautogui
-import time
-import pyperclip
-import os 
-import hashlib
-import base64
-import socket
+import cv2, pyautogui, time, pyperclip, os, hashlib, base64, socket
 
-### Notes ###
+'''Notes'''
 # pip install opencv-python, pyautogui, pyperclip, hashlib
 # IMPORTANT set chat background to black, uncheck "Add whatsapp doodles"
 # Decoding and cutting the '*' will be handled by the function that calls read_message()
 
-### Later Problems ###
+'''Later Problems'''
 # There could be problems with multiple requests
 # at once, or sending responses or requests wile
 # the other side is waiting for an ack. 
@@ -27,8 +20,10 @@ delay = .05
 HOST = "192.168.1.213"
 PORT = 8080
 
-### Runs on startup to find essential GUI object coordinates ###   
+
 def find_coords():
+    '''Runs on startup to find essential GUI object coordinates'''
+
     # Take the screenshot to look for coords in
     pyautogui.screenshot('./assets/ss.png')
 
@@ -44,8 +39,10 @@ def find_coords():
     # Remove screenshot
     os.remove('assets/ss.png')
 
-### Resize the WhatsApp window to make it easier to find the newest message coords easier ###
+
 def resize():
+    '''Resize the WhatsApp window to make it easier to find the newest message coords easier'''
+
     # Get coords to change window size
     method = cv2.TM_SQDIFF_NORMED
     small_image = cv2.imread('./assets/resize.png')
@@ -59,8 +56,10 @@ def resize():
     pyautogui.dragTo(0, Y)
     pyautogui.press('end')
 
-### Finds the coordinates of the textbox to write messages ###
+
 def find_text_box():
+    '''Finds the coordinates of the textbox to write messages'''
+
     global text_box_x
     global text_box_y
 
@@ -71,8 +70,10 @@ def find_text_box():
     mn,_,mnLoc,_ = cv2.minMaxLoc(result)
     text_box_x, text_box_y = mnLoc
 
-### Finds the spot we can triple click to copy the newest message ###
+
 def find_new_message():
+    '''Finds the spot we can triple click to copy the newest message'''
+
     global new_message_x
     global new_message_y
 
@@ -83,31 +84,27 @@ def find_new_message():
     mn,_,mnLoc,_ = cv2.minMaxLoc(result)
     new_message_x, new_message_y = mnLoc
 
-### Writes a message to WhatsApp ###
+
 def write_message(message):
-    # Click on the text box
+    '''Writes a message to WhatsApp'''
+
     pyautogui.click(text_box_x,text_box_y)
-    # Base64encode message and append a * so receiver knows when we're done
+    # Base64 encode message and append a * so receiver knows when we're done
     b64message = base64.b64encode(message.encode('utf-8')) + '*'.encode('utf-8')
     # Send the messages in 844 character chunks
     while(len(b64message.decode("utf-8")) > 844):
-        # make curr_chunk string the first 844 characters of b64message
         curr_chunk = b64message[:844]
-        # Remove the characters in the to_send string
         b64message = b64message[845:]
-        # write the message in the text box
         pyautogui.write(curr_chunk)
-        # Wait for an ack
         wait_ack()
 
-    # write the message to the box
     pyautogui.write(b64message.decode("utf-8"))
-    # click send
     pyautogui.press('enter')
     
-### Attempts to read the newest message ###
-### Returns: Returns newest message if not from self ###
+
 def read_message():
+    '''Reads and returns the newest message not from self'''
+
     global cliphash
 
     highlight_new_message()
@@ -130,14 +127,16 @@ def read_message():
         return None
 
 def highlight_new_message():
+    '''Highlights the new message'''
+
     pyautogui.click(new_message_x, new_message_y - 30)
     pyautogui.click(new_message_x, new_message_y - 30)
     pyautogui.click(new_message_x, new_message_y - 30) 
 
-### Waits for the next full message to come in ###
-### Acks and decodes as necessary ###
+
 def wait_full_message():
-    # Wait for a response from server
+    '''Waits for the next full message to come in, ACKs and decodes as necessary'''
+
     message = read_message()
 
     while message is None:
@@ -154,45 +153,38 @@ def wait_full_message():
 
     return base64.b64decode(message[:-1]).decode('utf-8')
 
-### Wait for other side to ack ###
-### ACKS are only sent and read by write_message ###
+
 def wait_ack():
+    '''Waits for ACK'''
     while read_message() != "Ack":
         time.sleep(delay)
 
-### Send ACK ###
+
 def write_ack():
-    # Click on the text box
+    '''Send ACK'''
     pyautogui.click(text_box_x,text_box_y)
-    # Write ACK
     pyautogui.write("Ack")
-    # click send
     pyautogui.press('enter')
 
-### Handle communications with squid ###
-def squid_stuff(request):
-    # Open a socket to the squid server
+
+def squid_tunnel(request):
+    '''Handle communications with squid'''
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.connect((HOST, PORT))
-        # Send the request
         s.sendall(request.encode('utf-8'))
-        # get the reply
-        rec = s.recv(2048)
-    # return the response from the squid server
+        rec = s.recv(1024)
     return response
 
-### The main loop for our server program ###
-### Take requests send responses forever ###
+
 def serve():
-    # Loop forever
+    '''Take requests send responses forever'''
     while(True):
-        # 1: Wait for request from client
         request = wait_full_message()
-        # 2: Forward request to squid
-        # 3: Get response from squid
-        response = squid_stuff(request)
-        # 4: Write response to client
+        response = squid_tunnel(request)
         write_message(response)
+
+
+# ---------------------------------------------------------- #
 
 # Initial setup 
 find_coords()
