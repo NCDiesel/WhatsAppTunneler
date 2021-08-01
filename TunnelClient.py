@@ -6,17 +6,11 @@ import os
 import hashlib
 import base64
 import socket
-
+from enum import Enum
 ### Notes ###
 # pip install opencv-python, pyautogui, pyperclip, hashlib
 # IMPORTANT set chat background to black, uncheck "Add whatsapp doodles"
 # Decoding and cutting the '*' will be handled by the function that calls read_message()
-# Need to make window wider by a certain number of pixels or check green grey
-
-### Later Problems ###
-# There could be problems with multiple requests
-# at once, or sending responses or requests wile
-# the other side is waiting for an ack. 
 
 # Globals
 cliphash = ""
@@ -28,6 +22,18 @@ delay = .05
 HOST = ''
 PORT = 44455
 BUFFER_SIZE = 1024
+
+# Enum for message senders
+class Sender(Enum):
+    self = 0
+    server = 1
+    ack = 2
+
+# Enum for message colors
+class Color(Enum):
+    green = (5, 97, 98)
+    grey = (38, 45, 49)
+    black = (10, 12, 13)
 
 ### Runs on startup to find essential GUI object coordinates ###   
 def find_coords():
@@ -113,42 +119,47 @@ def write_message(message):
     pyautogui.press('enter')
 
 # Check for new messages
-# Return true if most recent message is not from us
-# Return false if our message is the most recent
-def poll_for_new_messages():
+# Returns who sent the most recent message (self, server, ack)
+def most_recent_sender():
     # Try until it works because the pyautogui pixel function is broken sometimes
     while True:
         try:
-            # Checks if a pixel in the newest message is green
-            if pyautogui.pixel((new_message_x + 30), (new_message_y - 30)) == (5, 97, 98):
-                return False
-            else:
-                return True
+            # Checks if a pixel in the newest message is green (self), grey (server), black (ACK from either party)
+            color = pyautogui.pixel((new_message_x + 90), (new_message_y - 30))
+            switch (color) {
+                case Color.green:
+                    return Sender.self
+                case Color.grey:
+                    return Sender.server
+                case Color.black:
+                    return Sender.ack
+            }
         except:
             print("pyautogui machine broke")
+
 ### Attempts to read the newest message ###
 ### Returns: Returns newest message if not from self ###
 def read_message():
 
-    # We don't want our own message
-    if not poll_for_new_messages():
-        return None
+    # Check who sent the most recent message
+    sender = most_recent_sender():
 
+    if sender == Sender.server:
+        return None
+    else if sender == Sender.ack:
+        return "Ack"
+
+    # Get the new message by copying it
     highlight_new_message()
-    # Attempt to copy
     pyautogui.hotkey('ctrl', 'c')
-    # Escape in case we highlighted our own message
     pyautogui.press('esc')
     new_message = pyperclip.paste()
     return new_message
 
 def highlight_new_message():
     pyautogui.click(new_message_x -11, new_message_y - 30)
-    time.sleep(.3)
     pyautogui.click(new_message_x -11, new_message_y - 30)
-    time.sleep(.3)
     pyautogui.click(new_message_x -11, new_message_y - 30)
-    time.sleep(.3)
 
 ### Waits for the next full message to come in ###
 ### Acks and decodes as necessary ###
@@ -203,7 +214,6 @@ def start():
 def tunnel_request(data, conn):
     # Writes WhatsApp message
     write_message(data)
-    time.sleep(3)
     # Wait for the next message from the server
     response = wait_full_message()
     
@@ -219,7 +229,6 @@ pyperclip.copy('')
 
 # Initial setup 
 find_coords()
-
 
 # Wait for connections to proxy server
 start()
