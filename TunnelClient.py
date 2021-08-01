@@ -1,4 +1,4 @@
-import cv2, pyautogui, time, pyperclip, os, hashlib, base64, socket, threading
+import cv2, pyautogui, time, pyperclip, os, hashlib, base64, socket
 
 """
 NOTES
@@ -174,8 +174,6 @@ def start():
             data = conn.recv(BUFFER_SIZE)
             if not data:
                 break
-            thread = threading.Thread(target=tunnel_request, args=(data,conn))
-            thread.start()
 
 
 def tunnel_request(data, conn):
