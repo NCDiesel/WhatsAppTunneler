@@ -175,7 +175,7 @@ def squid_tunnel(request):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.connect((HOST, PORT))
         s.sendall(request.encode('utf-8'))
-        rec = s.recv(1024)
+        rec = s.recv(2048)
     return response
 
 

@@ -15,7 +15,7 @@ text_box_y = 0
 delay = .05
 HOST = ''
 PORT = 44455
-BUFFER_SIZE = 1024
+BUFFER_SIZE = 2048
 
 
 def find_coords():
