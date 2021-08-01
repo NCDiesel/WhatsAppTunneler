@@ -4,7 +4,6 @@ import cv2, pyautogui, time, pyperclip, os, hashlib, base64, socket, threading
 NOTES
 pip install opencv-python, pyautogui, pyperclip, hashlib
 IMPORTANT set chat background to black, uncheck "Add whatsapp doodles"
-Decoding and cutting the'*'will be handled by the function that calls read_message()
 """
 
 # Globals
@@ -187,7 +186,7 @@ def tunnel_request(data, conn):
     response = wait_full_message()
     
     # Adds padding and forwards response to browser
-    message = response + (BUFFER_SIZE - len(response)) *''
+    message = response + (BUFFER_SIZE - len(response)) * ' '
     conn.send(message.encode())
 
 

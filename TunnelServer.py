@@ -1,14 +1,17 @@
 import cv2, pyautogui, time, pyperclip, os, hashlib, base64, socket
 
-'''Notes'''
-# pip install opencv-python, pyautogui, pyperclip, hashlib
-# IMPORTANT set chat background to black, uncheck "Add whatsapp doodles"
-# Decoding and cutting the '*' will be handled by the function that calls read_message()
+'''
+Notes:
 
-'''Later Problems'''
-# There could be problems with multiple requests
-# at once, or sending responses or requests wile
-# the other side is waiting for an ack. 
+pip install opencv-python, pyautogui, pyperclip, hashlib
+IMPORTANT set chat background to black, uncheck "Add whatsapp doodles"
+'''
+
+'''
+TO-DO:
+there could be problems with multiple requests at once,
+or sending responses or requests while the other side is waiting for an ack.
+'''
 
 # Globals
 cliphash = ""
