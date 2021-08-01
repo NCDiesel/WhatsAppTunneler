@@ -105,34 +105,51 @@ def write_message(message):
     # click send
     pyautogui.press('enter')
     
+# Check for new messages
+# Returns who sent the most recent message (self, server, ack)
+def most_recent_sender():
+    # R, G, B Colors
+    green = (5, 97, 98)
+    grey = (38, 45, 49)
+    black = (10, 12, 13)
+    
+    # Try until it works because the pyautogui pixel function is broken sometimes
+    while True:
+        try:
+            # Checks if a pixel in the newest message is green (self), grey (client), black (ACK from either party)
+            color = pyautogui.pixel((new_message_x + 90), (new_message_y - 30))
+            if color == green:
+                return "Self"
+            elif color == grey:
+                return "Client"
+            elif color == black:
+                return "Ack"
+        except:
+            pass
+
 ### Attempts to read the newest message ###
 ### Returns: Returns newest message if not from self ###
 def read_message():
-    global cliphash
 
-    highlight_new_message()
-    
-    # Attempt to copy
-    pyautogui.hotkey('ctrl', 'c')
-    
-    # Escape in case we highlighted our own message
-    pyautogui.press('esc')
+    # Check who sent the most recent message
+    sender = most_recent_sender()
 
-    new_message = pyperclip.paste()
-    if new_message == "Ack":
-        return new_message
-
-    new_msg_hash = hashlib.md5(pyperclip.paste().encode('utf-8')).digest()
-    if new_msg_hash != cliphash:
-        cliphash = new_msg_hash
-        return new_message
-    else:
+    if sender == "Client":
         return None
+    elif sender == "Ack":
+        return "Ack"
+
+    # Get the new message by copying it
+    highlight_new_message()
+    pyautogui.hotkey('ctrl', 'c')
+    pyautogui.press('esc')
+    new_message = pyperclip.paste()
+    return new_message
 
 def highlight_new_message():
-    pyautogui.click(new_message_x, new_message_y - 30)
-    pyautogui.click(new_message_x, new_message_y - 30)
-    pyautogui.click(new_message_x, new_message_y - 30) 
+    pyautogui.click(new_message_x -11, new_message_y - 30)
+    pyautogui.click(new_message_x -11, new_message_y - 30)
+    pyautogui.click(new_message_x -11, new_message_y - 30)
 
 ### Waits for the next full message to come in ###
 ### Acks and decodes as necessary ###
@@ -140,7 +157,7 @@ def wait_full_message():
     # Wait for a response from server
     message = read_message()
 
-    while message is None:
+    while message is None or len(message) < 1:
         time.sleep(delay)
         message = read_message()
 
