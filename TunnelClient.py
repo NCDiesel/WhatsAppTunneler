@@ -111,31 +111,36 @@ def write_message(message):
     pyautogui.write(b64message.decode("utf-8"))
     # click send
     pyautogui.press('enter')
-    
+
+# Check for new messages
+# Return true if most recent message is not from us
+# Return false if our message is the most recent
+def poll_for_new_messages():
+    # Try until it works because the pyautogui pixel function is broken sometimes
+    while True:
+        try:
+            # Checks if a pixel in the newest message is green
+            if pyautogui.pixel((new_message_x + 30), (new_message_y - 30)) == (5, 97, 98):
+                return False
+            else:
+                return True
+        except:
+            print("pyautogui machine broke")
 ### Attempts to read the newest message ###
 ### Returns: Returns newest message if not from self ###
 def read_message():
-    global cliphash
+
+    # We don't want our own message
+    if not poll_for_new_messages():
+        return None
 
     highlight_new_message()
-    time.sleep(.5)
-
     # Attempt to copy
     pyautogui.hotkey('ctrl', 'c')
-    
     # Escape in case we highlighted our own message
     pyautogui.press('esc')
-
     new_message = pyperclip.paste()
-    if new_message == "Ack":
-        return new_message
-
-    new_msg_hash = hashlib.md5(pyperclip.paste().encode('utf-8')).digest()
-    if new_msg_hash != cliphash:
-        cliphash = new_msg_hash
-        return new_message
-    else:
-        return None
+    return new_message
 
 def highlight_new_message():
     pyautogui.click(new_message_x -11, new_message_y - 30)
@@ -214,6 +219,7 @@ pyperclip.copy('')
 
 # Initial setup 
 find_coords()
+
 
 # Wait for connections to proxy server
 start()
