@@ -11,6 +11,7 @@ import socket
 # pip install opencv-python, pyautogui, pyperclip, hashlib
 # IMPORTANT set chat background to black, uncheck "Add whatsapp doodles"
 # Decoding and cutting the '*' will be handled by the function that calls read_message()
+# Need to make window wider by a certain number of pixels or check green grey
 
 ### Later Problems ###
 # There could be problems with multiple requests
@@ -58,7 +59,10 @@ def resize():
     # Drag the window all the way to the left
     pyautogui.moveTo(X + 50, Y)
     pyautogui.dragTo(0, Y)
-    pyautogui.press('end')
+    pyautogui.press('pagedown')
+    pyautogui.press('pagedown')
+    pyautogui.press('pagedown')
+    pyautogui.press('pagedown')
 
 ### Finds the coordinates of the textbox to write messages ###
 def find_text_box():
@@ -89,7 +93,7 @@ def write_message(message):
     # Click on the text box
     pyautogui.click(text_box_x,text_box_y)
     # Base64encode message and append a * so receiver knows when we're done
-    b64message = base64.b64encode(message.encode('utf-8')) + '*'.encode('utf-8')
+    b64message = base64.b64encode(message) + '*'.encode('utf-8')
     # Send the messages in 844 character chunks
     while(len(b64message.decode("utf-8")) > 844):
         # make curr_chunk string the first 844 characters of b64message
@@ -97,7 +101,9 @@ def write_message(message):
         # Remove the characters in the ToSend string
         b64message = b64message[845:]
         # write the message in the text box
-        pyautogui.write(curr_chunk)
+        pyautogui.write(curr_chunk.decode('utf-8'))
+
+        pyautogui.press('enter')
         # Wait for an ack
         wait_ack()
 
@@ -112,7 +118,8 @@ def read_message():
     global cliphash
 
     highlight_new_message()
-    
+    time.sleep(.5)
+
     # Attempt to copy
     pyautogui.hotkey('ctrl', 'c')
     
@@ -131,9 +138,12 @@ def read_message():
         return None
 
 def highlight_new_message():
-    pyautogui.click(new_message_x, new_message_y - 30)
-    pyautogui.click(new_message_x, new_message_y - 30)
-    pyautogui.click(new_message_x, new_message_y - 30)
+    pyautogui.click(new_message_x -11, new_message_y - 30)
+    time.sleep(.3)
+    pyautogui.click(new_message_x -11, new_message_y - 30)
+    time.sleep(.3)
+    pyautogui.click(new_message_x -11, new_message_y - 30)
+    time.sleep(.3)
 
 ### Waits for the next full message to come in ###
 ### Acks and decodes as necessary ###
@@ -141,7 +151,7 @@ def wait_full_message():
     # Wait for a response from server
     message = read_message()
 
-    while message is None:
+    while message is None or len(message) < 1:
         time.sleep(delay)
         message = read_message()
 
@@ -182,12 +192,13 @@ def start():
             data = conn.recv(BUFFER_SIZE)
             if not data:
                 break
-            tunnel_request(data, conn)
+            if "cern" in data.decode('utf-8'):
+                tunnel_request(data, conn)
 
 def tunnel_request(data, conn):
     # Writes WhatsApp message
     write_message(data)
-    
+    time.sleep(3)
     # Wait for the next message from the server
     response = wait_full_message()
     
@@ -198,6 +209,8 @@ def tunnel_request(data, conn):
 
 ######################
 
+# Clear clipboard
+pyperclip.copy('')
 
 # Initial setup 
 find_coords()
