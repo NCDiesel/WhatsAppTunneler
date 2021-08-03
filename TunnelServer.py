@@ -23,7 +23,7 @@ new_message_x = 0
 new_message_y = 0
 text_box_x = 0
 text_box_y = 0
-delay = .05 
+delay = 1.3
 HOST = "192.168.1.213"
 PORT = 8080
 
@@ -88,25 +88,30 @@ def write_message(message):
     # Click on the text box
     pyautogui.click(text_box_x,text_box_y)
     # Base64encode message and append a * so receiver knows when we're done
-    b64message = base64.b64encode(message.encode('utf-8')) + '*'.encode('utf-8')
+    print(message)
+    b64message = base64.b64encode(message) + '*'.encode()
     # Send the messages in 844 character chunks
-    while(len(b64message.decode("utf-8")) > 844):
+    while(len(b64message.decode()) > 844):
         # make curr_chunk string the first 844 characters of b64message
         curr_chunk = b64message[:844]
         # Remove the characters in the to_send string
-        b64message = b64message[845:]
+        b64message = b64message[844:]
         # write the message in the text box
-        pyautogui.write(curr_chunk)
+        pyautogui.write(curr_chunk.decode())
+        pyautogui.press('enter')
+        time.sleep(delay)
+        
         # Wait for an ack
         wait_ack()
 
     # write the message to the box
-    pyautogui.write(b64message.decode("utf-8"))
+    pyautogui.write(b64message.decode())
     # click send
     pyautogui.press('enter')
+    time.sleep(delay)
     
 # Check for new messages
-# Returns who sent the most recent message (self, server, ack)
+# Returns who sent the most recent message (self, client, ack)
 def most_recent_sender():
     # R, G, B Colors
     green = (5, 97, 98)
@@ -134,10 +139,11 @@ def read_message():
     # Check who sent the most recent message
     sender = most_recent_sender()
 
-    if sender == "Client":
+    # Do nothing if there's no new non-ack message
+    if sender == "Self":
         return None
     elif sender == "Ack":
-        return "Ack"
+        return None
 
     # Get the new message by copying it
     highlight_new_message()
@@ -169,12 +175,12 @@ def wait_full_message():
             next_chunk = read_message()
         message += next_chunk
 
-    return base64.b64decode(message[:-1]).decode('utf-8')
+    return base64.b64decode(message[:-1])
 
 ### Wait for other side to ack ###
 ### ACKS are only sent and read by write_message ###
 def wait_ack():
-    while read_message() != "Ack":
+    while most_recent_sender() != "Ack":
         time.sleep(delay)
 
 ### Send ACK ###
@@ -183,6 +189,8 @@ def write_ack():
     pyautogui.click(text_box_x,text_box_y)
     # Write ACK
     pyautogui.write("Ack")
+    time.sleep(delay)
+    
     # click send
     pyautogui.press('enter')
 
@@ -192,11 +200,11 @@ def squid_stuff(request):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.connect((HOST, PORT))
         # Send the request
-        s.sendall(request.encode('utf-8'))
+        s.sendall(request)
         # get the reply
-        rec = s.recv(2048)
+        rec = s.recv(12048)
     # return the response from the squid server
-    return response
+    return rec
 
 ### The main loop for our server program ###
 ### Take requests send responses forever ###
@@ -210,6 +218,12 @@ def serve():
         response = squid_stuff(request)
         # 4: Write response to client
         write_message(response)
+
+# Clear clipboard
+pyperclip.copy('')
+
+# Wait on startup 
+time.sleep(4)
 
 # Initial setup 
 find_coords()
