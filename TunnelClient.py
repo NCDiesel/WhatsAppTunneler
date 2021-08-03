@@ -59,7 +59,7 @@ def resize():
 
 
 def find_text_box():
-   '''Finds the coordinates of the textbox to write messages'''
+    '''Finds the coordinates of the textbox to write messages'''
    
     # Use our globals 
     global text_box_x
@@ -77,7 +77,7 @@ def find_text_box():
 
 
 def find_new_message():
-   '''Finds the spot we can triple click to copy the newest message'''
+    '''Finds the spot we can triple click to copy the newest message'''
    
    # Use our globals
     global new_message_x
