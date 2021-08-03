@@ -18,10 +18,10 @@ new_message_x = 0
 new_message_y = 0
 text_box_x = 0
 text_box_y = 0
-delay = .05
+delay = .6
 HOST = ''
 PORT = 44455
-BUFFER_SIZE = 1024
+BUFFER_SIZE = 12048
 
 # Enum for message senders
 class Sender(Enum):
@@ -99,55 +99,61 @@ def write_message(message):
     # Click on the text box
     pyautogui.click(text_box_x,text_box_y)
     # Base64encode message and append a * so receiver knows when we're done
-    b64message = base64.b64encode(message) + '*'.encode('utf-8')
+    print(message)
+    b64message = base64.b64encode(message) + '*'.encode()
     # Send the messages in 844 character chunks
     while(len(b64message.decode("utf-8")) > 844):
         # make curr_chunk string the first 844 characters of b64message
         curr_chunk = b64message[:844]
         # Remove the characters in the ToSend string
-        b64message = b64message[845:]
+        b64message = b64message[844:]
         # write the message in the text box
-        pyautogui.write(curr_chunk.decode('utf-8'))
+        pyautogui.write(curr_chunk.decode())
 
         pyautogui.press('enter')
+        time.sleep(delay)
         # Wait for an ack
         wait_ack()
 
     # write the message to the box
-    pyautogui.write(b64message.decode("utf-8"))
+    pyautogui.write(b64message.decode())
     # click send
     pyautogui.press('enter')
+    time.sleep(delay)
 
 # Check for new messages
 # Returns who sent the most recent message (self, server, ack)
 def most_recent_sender():
+    # R, G, B Colors
+    green = (5, 97, 98)
+    grey = (38, 45, 49)
+    black = (10, 12, 13)
+    
     # Try until it works because the pyautogui pixel function is broken sometimes
     while True:
         try:
             # Checks if a pixel in the newest message is green (self), grey (server), black (ACK from either party)
             color = pyautogui.pixel((new_message_x + 90), (new_message_y - 30))
-            switch (color) {
-                case Color.green:
-                    return Sender.self
-                case Color.grey:
-                    return Sender.server
-                case Color.black:
-                    return Sender.ack
-            }
+            if color == green:
+                return "Self"
+            elif color == grey:
+                return "Server"
+            elif color == black:
+                return "Ack"
         except:
-            print("pyautogui machine broke")
+            pass
 
 ### Attempts to read the newest message ###
 ### Returns: Returns newest message if not from self ###
 def read_message():
 
     # Check who sent the most recent message
-    sender = most_recent_sender():
+    sender = most_recent_sender()
 
-    if sender == Sender.server:
+    if sender == "Self":
         return None
-    else if sender == Sender.ack:
-        return "Ack"
+    elif sender == "Ack":
+        return None
 
     # Get the new message by copying it
     highlight_new_message()
@@ -179,12 +185,15 @@ def wait_full_message():
             next_chunk = read_message()
         message += next_chunk
 
-    return base64.b64decode(message[:-1]).decode('utf-8')
+    try:
+        return base64.b64decode(message[:-1]).decode()
+    except:
+        return base64.b64decode(message[:-1])
 
 ### Wait for other side to ack ###
 ### ACKS are only sent and read by write_message ###
 def wait_ack():
-    while read_message() != "Ack":
+    while most_recent_sender() != "Ack":
         time.sleep(delay)
 
 ### Send ACK ###
@@ -195,6 +204,7 @@ def write_ack():
     pyautogui.write("Ack")
     # click send
     pyautogui.press('enter')
+    time.sleep(delay)
 
 ### Proxy functions ###
 def start():
@@ -206,26 +216,39 @@ def start():
             conn, addr = s.accept()
             print('Connection from ', addr)
             data = conn.recv(BUFFER_SIZE)
-            if not data:
-                break
-            if "cern" in data.decode('utf-8'):
-                tunnel_request(data, conn)
+            #if not data:
+            #    break
+            garbage = ["firefox", "pocket", "mozilla.com", "mozilla.net", "telem", "push.services", "safebrow"]
+            if any(x in data.decode() for x in garbage):
+                continue
+            tunnel_request(data, conn)
 
 def tunnel_request(data, conn):
     # Writes WhatsApp message
     write_message(data)
+    
+    time.sleep(.5)
     # Wait for the next message from the server
     response = wait_full_message()
     
     # Adds padding and forwards response to browser
-    message = response + (BUFFER_SIZE - len(response)) * ' '
-    conn.send(message.encode())
-
+    try:
+        message = response + (BUFFER_SIZE - len(response)) * ' '
+    except:
+        message = response + (BUFFER_SIZE - len(response)) * b'\x00'
+        
+    try:
+        conn.send(message.encode())
+    except:
+        conn.send(message)
 
 ######################
 
 # Clear clipboard
 pyperclip.copy('')
+
+# Wait on startup 
+time.sleep(4)
 
 # Initial setup 
 find_coords()
