@@ -59,7 +59,7 @@ def resize():
 
 
 def find_text_box():
-   '''Finds the coordinates of the textbox to write messages'''
+    '''Finds the coordinates of the textbox to write messages'''
    
     # Use our globals 
     global text_box_x
@@ -77,7 +77,7 @@ def find_text_box():
 
 
 def find_new_message():
-   '''Finds the spot we can triple click to copy the newest message'''
+    '''Finds the spot we can triple click to copy the newest message'''
    
    # Use our globals
     global new_message_x
@@ -101,10 +101,10 @@ def write_message(message):
     pyautogui.click(text_box_x,text_box_y)
     
     # Base64encode message and append a * so receiver knows when we're done
-    b64message = base64.b64encode(message) + '*'.encode()
+    b64message = base64.b64encode(message) + '*'.encode('utf-8')
     
     # Send the messages in 844 character chunks
-    while(len(b64message.decode("utf-8")) > 844):
+    while(len(b64message.decode('utf-8')) > 844):
     
         # make curr_chunk string the first 844 characters of b64message
         curr_chunk = b64message[:844]
@@ -113,7 +113,7 @@ def write_message(message):
         b64message = b64message[844:]
         
         # write the message in the text box
-        pyautogui.write(curr_chunk.decode())
+        pyautogui.write(curr_chunk.decode('utf-8'))
 
         # Send the message
         pyautogui.press('enter')
@@ -123,7 +123,7 @@ def write_message(message):
         wait_ack()
 
     # write the message to the box
-    pyautogui.write(b64message.decode())
+    pyautogui.write(b64message.decode('utf-8'))
     
     # click send
     pyautogui.press('enter')
@@ -215,11 +215,7 @@ def wait_full_message():
         # Concat chunks
         message += next_chunk
 
-    # Images error on utf-8 decode, easiest way to figure out if we can decode is to try
-    try:
-        return base64.b64decode(message[:-1]).decode()
-    except:
-        return base64.b64decode(message[:-1])
+    return base64.b64decode(message[:-1])
 
 
 def wait_ack():
