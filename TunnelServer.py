@@ -221,6 +221,8 @@ time.sleep(4)
 # Initial setup 
 find_coords()
 
+# Start communications
 write_message(b"S")
+
 # Be a server
 serve()
