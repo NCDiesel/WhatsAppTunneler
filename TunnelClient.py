@@ -234,5 +234,8 @@ time.sleep(4)
 # Initial setup 
 find_coords()
 
+# Start communications
+write_message(b"A")
+
 # Wait for connections to proxy server
 start()
